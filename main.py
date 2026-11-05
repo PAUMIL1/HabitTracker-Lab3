@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import messagebox, ttk
 
 
 class HabitTrackerApp:
@@ -36,31 +36,73 @@ class HabitTrackerApp:
         main = ttk.Frame(self.root, padding=12)
         main.pack(fill=tk.BOTH, expand=True)
 
+        goal = ttk.LabelFrame(main, text="Дневная цель", padding=10)
+        goal.pack(fill=tk.X, pady=(0, 10))
+        ttk.Label(goal, text="Цель (мл):").pack(side=tk.LEFT)
+        self.goal_entry = ttk.Entry(goal, width=10)
+        self.goal_entry.insert(0, str(self.goal_ml))
+        self.goal_entry.pack(side=tk.LEFT, padx=6)
+        ttk.Button(goal, text="Задать цель", command=self._set_goal).pack(
+            side=tk.LEFT
+        )
+
         water = ttk.LabelFrame(main, text="Водный баланс", padding=10)
         water.pack(fill=tk.X, pady=(0, 10))
         self.water_status = ttk.Label(water, text="")
         self.water_status.pack(anchor=tk.W, pady=(0, 8))
+        self.progress = ttk.Progressbar(water, maximum=100)
+        self.progress.pack(fill=tk.X, pady=(0, 10))
 
         buttons = ttk.Frame(water)
-        buttons.pack(fill=tk.X)
+        buttons.pack(fill=tk.X, pady=(0, 8))
         for amount in (150, 250, 500):
             ttk.Button(
                 buttons, text=f"+{amount} мл",
                 command=lambda value=amount: self._add_water(value),
             ).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=3)
 
+        custom = ttk.Frame(water)
+        custom.pack(fill=tk.X)
+        ttk.Label(custom, text="Свой объём (мл):").pack(side=tk.LEFT)
+        self.water_entry = ttk.Entry(custom, width=10)
+        self.water_entry.pack(side=tk.LEFT, padx=6)
+        ttk.Button(custom, text="Добавить", command=self._add_water).pack(
+            side=tk.LEFT
+        )
+
         ttk.Label(
             main, text="Список привычек добавим на следующем этапе."
         ).pack(anchor=tk.W, pady=8)
 
-    def _add_water(self, amount):
-        self.water_ml += amount
-        self._update_water()
+    def _set_goal(self):
+        try:
+            goal = int(self.goal_entry.get().strip())
+            if goal <= 0:
+                raise ValueError("Цель должна быть больше нуля.")
+            self.goal_ml = goal
+            self._update_water()
+        except ValueError as error:
+            messagebox.showerror("Некорректная цель", str(error))
+
+    def _add_water(self, amount=None):
+        try:
+            is_custom = amount is None
+            value = int(self.water_entry.get().strip()) if is_custom else amount
+            if value <= 0:
+                raise ValueError("Введите положительное число миллилитров.")
+            self.water_ml += value
+            if is_custom:
+                self.water_entry.delete(0, tk.END)
+            self._update_water()
+        except ValueError as error:
+            messagebox.showerror("Некорректный объём", str(error))
 
     def _update_water(self):
+        percent = min(100, int(self.water_ml * 100 / max(self.goal_ml, 1)))
         self.water_status.config(
-            text=f"Выпито: {self.water_ml} / {self.goal_ml} мл"
+            text=f"Выпито: {self.water_ml} / {self.goal_ml} мл ({percent}%)"
         )
+        self.progress["value"] = percent
 
     def _set_size(self, width, height):
         self.root.geometry(f"{width}x{height}")
