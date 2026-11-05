@@ -20,6 +20,8 @@ class HabitTrackerApp:
     def _create_menu(self):
         menu = tk.Menu(self.root)
         file_menu = tk.Menu(menu, tearoff=False)
+        file_menu.add_command(label="Сбросить день", command=self._reset_day)
+        file_menu.add_separator()
         file_menu.add_command(label="Выход", command=self.root.destroy)
         menu.add_cascade(label="Файл", menu=file_menu)
 
@@ -33,9 +35,17 @@ class HabitTrackerApp:
         view_menu.add_command(
             label="Широкое окно", command=lambda: self._set_size(760, 800)
         )
+        self.resize_enabled = tk.BooleanVar(value=True)
+        view_menu.add_checkbutton(
+            label="Разрешить менять размер", variable=self.resize_enabled,
+            command=self._toggle_resizable,
+        )
         menu.add_cascade(label="Вид", menu=view_menu)
-        self.root.config(menu=menu)
 
+        help_menu = tk.Menu(menu, tearoff=False)
+        help_menu.add_command(label="О программе", command=self._show_about)
+        menu.add_cascade(label="Справка", menu=help_menu)
+        self.root.config(menu=menu)
     def _create_widgets(self):
         main = ttk.Frame(self.root, padding=12)
         main.pack(fill=tk.BOTH, expand=True)
@@ -142,23 +152,27 @@ class HabitTrackerApp:
         self.habit_entry.delete(0, tk.END)
         self._update_habits()
 
+    def _selected_habit_index(self):
+        selection = self.habit_list.curselection()
+        if not selection:
+            raise IndexError("Сначала выберите привычку в списке.")
+        return selection[0]
+
     def _toggle_habit(self):
-        selected = self.habit_list.curselection()
-        if not selected:
-            messagebox.showwarning("Привычка", "Сначала выберите строку.")
-            return
-        index = selected[0]
-        self.habits[index]["done"] = not self.habits[index]["done"]
-        self._update_habits()
-        self.habit_list.selection_set(index)
+        try:
+            index = self._selected_habit_index()
+            self.habits[index]["done"] = not self.habits[index]["done"]
+            self._update_habits()
+            self.habit_list.selection_set(index)
+        except IndexError as error:
+            messagebox.showwarning("Привычка не выбрана", str(error))
 
     def _delete_habit(self):
-        selected = self.habit_list.curselection()
-        if not selected:
-            messagebox.showwarning("Привычка", "Сначала выберите строку.")
-            return
-        self.habits.pop(selected[0])
-        self._update_habits()
+        try:
+            self.habits.pop(self._selected_habit_index())
+            self._update_habits()
+        except IndexError as error:
+            messagebox.showwarning("Привычка не выбрана", str(error))
 
     def _update_habits(self):
         self.habit_list.delete(0, tk.END)
@@ -170,6 +184,28 @@ class HabitTrackerApp:
 
     def _set_size(self, width, height):
         self.root.geometry(f"{width}x{height}")
+
+    def _toggle_resizable(self):
+        allowed = self.resize_enabled.get()
+        self.root.resizable(allowed, allowed)
+
+    def _reset_day(self):
+        confirmed = messagebox.askyesno(
+            "Сбросить день", "Обнулить воду и отметки привычек?"
+        )
+        if not confirmed:
+            return
+        self.water_ml = 0
+        for habit in self.habits:
+            habit["done"] = False
+        self._update_water()
+        self._update_habits()
+
+    def _show_about(self):
+        messagebox.showinfo(
+            "О программе",
+            "Трекер привычек и водного баланса.\nЛабораторная работа №3.",
+        )
 
 
 if __name__ == "__main__":
