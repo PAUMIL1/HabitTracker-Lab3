@@ -9,6 +9,10 @@ class HabitTrackerApp:
         self.root.geometry("620x700")
         self.goal_ml = 2000
         self.water_ml = 0
+        self.habits = [
+            {"title": "Прогулка", "done": False},
+            {"title": "Чтение", "done": False},
+        ]
         self._create_menu()
         self._create_widgets()
         self._update_water()
@@ -70,9 +74,34 @@ class HabitTrackerApp:
             side=tk.LEFT
         )
 
-        ttk.Label(
-            main, text="Список привычек добавим на следующем этапе."
-        ).pack(anchor=tk.W, pady=8)
+        habits = ttk.LabelFrame(main, text="Привычки на сегодня", padding=10)
+        habits.pack(fill=tk.BOTH, expand=True)
+        add_row = ttk.Frame(habits)
+        add_row.pack(fill=tk.X, pady=(0, 8))
+        self.habit_entry = ttk.Entry(add_row)
+        self.habit_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        ttk.Button(add_row, text="Добавить", command=self._add_habit).pack(
+            side=tk.LEFT, padx=(6, 0)
+        )
+        list_frame = ttk.Frame(habits)
+        list_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 8))
+        self.habit_list = tk.Listbox(list_frame, height=6)
+        scroll = ttk.Scrollbar(
+            list_frame, orient=tk.VERTICAL, command=self.habit_list.yview
+        )
+        self.habit_list.configure(yscrollcommand=scroll.set)
+        self.habit_list.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        actions = ttk.Frame(habits)
+        actions.pack(fill=tk.X)
+        ttk.Button(
+            actions, text="Выполнено / не выполнено",
+            command=self._toggle_habit,
+        ).pack(side=tk.LEFT)
+        ttk.Button(
+            actions, text="Удалить", command=self._delete_habit
+        ).pack(side=tk.RIGHT)
+        self._update_habits()
 
     def _set_goal(self):
         try:
@@ -103,6 +132,41 @@ class HabitTrackerApp:
             text=f"Выпито: {self.water_ml} / {self.goal_ml} мл ({percent}%)"
         )
         self.progress["value"] = percent
+
+    def _add_habit(self):
+        title = self.habit_entry.get().strip()
+        if not title:
+            messagebox.showwarning("Привычка", "Введите название.")
+            return
+        self.habits.append({"title": title, "done": False})
+        self.habit_entry.delete(0, tk.END)
+        self._update_habits()
+
+    def _toggle_habit(self):
+        selected = self.habit_list.curselection()
+        if not selected:
+            messagebox.showwarning("Привычка", "Сначала выберите строку.")
+            return
+        index = selected[0]
+        self.habits[index]["done"] = not self.habits[index]["done"]
+        self._update_habits()
+        self.habit_list.selection_set(index)
+
+    def _delete_habit(self):
+        selected = self.habit_list.curselection()
+        if not selected:
+            messagebox.showwarning("Привычка", "Сначала выберите строку.")
+            return
+        self.habits.pop(selected[0])
+        self._update_habits()
+
+    def _update_habits(self):
+        self.habit_list.delete(0, tk.END)
+        for habit in self.habits:
+            mark = "[x]" if habit["done"] else "[ ]"
+            self.habit_list.insert(
+                tk.END, f"{mark} {habit['title']}"
+            )
 
     def _set_size(self, width, height):
         self.root.geometry(f"{width}x{height}")
