@@ -56,6 +56,7 @@ class HabitTrackerApp:
         self.goal_entry = ttk.Entry(goal, width=10)
         self.goal_entry.insert(0, str(self.goal_ml))
         self.goal_entry.pack(side=tk.LEFT, padx=6)
+        self.goal_entry.bind("<Return>", lambda _event: self._set_goal())
         ttk.Button(goal, text="Задать цель", command=self._set_goal).pack(
             side=tk.LEFT
         )
@@ -80,6 +81,7 @@ class HabitTrackerApp:
         ttk.Label(custom, text="Свой объём (мл):").pack(side=tk.LEFT)
         self.water_entry = ttk.Entry(custom, width=10)
         self.water_entry.pack(side=tk.LEFT, padx=6)
+        self.water_entry.bind("<Return>", lambda _event: self._add_water())
         ttk.Button(custom, text="Добавить", command=self._add_water).pack(
             side=tk.LEFT
         )
@@ -90,6 +92,7 @@ class HabitTrackerApp:
         add_row.pack(fill=tk.X, pady=(0, 8))
         self.habit_entry = ttk.Entry(add_row)
         self.habit_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        self.habit_entry.bind("<Return>", lambda _event: self._add_habit())
         ttk.Button(add_row, text="Добавить", command=self._add_habit).pack(
             side=tk.LEFT, padx=(6, 0)
         )
